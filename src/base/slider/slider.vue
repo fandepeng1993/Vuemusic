@@ -43,7 +43,6 @@
           if(this.autoPlay){
             this._play()
           }
-
         },20)
         window.addEventListener('resize',()=>{
           if(!this.slider){
@@ -110,7 +109,11 @@
           },this.interval)
 
         }
+      },
+      destroyed(){
+        clearTimeout(this.timer)
       }
+
     }
 
 </script>
