@@ -1,12 +1,12 @@
 <template>
   <div class="recommend">
-    <scroll class="recommend-content" :datas="discList">
+    <scroll ref="scroll" class="recommend-content" :datas="discList">
       <div>
         <div v-if="recommends.length" class="slider-wrapper">
           <slider>
             <div v-for="item in recommends">
               <a :href="item.linkUrl">
-                <img :src="item.picUrl" alt="">
+                <img class="needsclick" @load="loadImage" :src="item.picUrl" alt="">
               </a>
             </div>
           </slider>
@@ -16,7 +16,7 @@
           <ul>
             <li v-for="item in discList " class="item">
               <div class="icon">
-                <img width="60" :src="item.imgurl" alt="">
+                <img width="60" height="60" v-lazy="item.imgurl" alt="">
               </div>
               <div class="text">
                 <h2 class="name" v-html="item.creator.name"></h2>
@@ -26,6 +26,9 @@
           </ul>
         </div>
       </div>
+      <div class="loading-container" v-show="!discList.length">
+        <loading></loading>
+      </div>
     </scroll>
   </div>
 </template>
@@ -34,6 +37,7 @@
   import Slider from 'base/slider/slider'
   import {getRecommend,getDiscList} from 'api/recommend'
   import {ERR_OK} from 'api/config'
+  import Loading from 'base/loading/loading'
 
 
   export default{
@@ -45,8 +49,11 @@
     },
     created(){
       //vue生命周期钩子函数
-      this._getRecommend()
-      this._getDiscList()
+        this._getRecommend();
+
+        setTimeout(()=>{
+          this._getDiscList();
+        },1000)
 
     },
     methods:{
@@ -61,14 +68,22 @@
         getDiscList().then((res)=>{
           if(res.code===ERR_OK){
            this.discList=res.data.list;
-            console.log(Scroll)
+          /*  console.log(Scroll)*/
           }
         })
+      },
+      loadImage() {
+        if(!this.checkLoad){
+          this.$refs.scroll.refresh();
+          this.checkLoad=true;
+        }
+
       }
     },
     components:{
       Slider,
-      Scroll
+      Scroll,
+      Loading
     }
   }
 
