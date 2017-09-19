@@ -18,7 +18,8 @@
     "better-scroll":"^0.1.15",
     "jsonp":"0.2.1",
     "axios":"^0.16.1",
-    "vue-lazyload": "^1.0.3"
+    "vue-lazyload": "^1.0.3",
+    "vuex":"^2.3.1"
   },
   "devDependencies": {
     "autoprefixer": "^7.1.2",
@@ -66,6 +67,7 @@
     "webpack-merge": "^4.1.0",
     "stylus": "^0.54.5",
     "stylus-loader": "^2.1.1"
+
   },
   "engines": {
     "node": ">= 4.0.0",

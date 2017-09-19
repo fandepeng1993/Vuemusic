@@ -53,7 +53,7 @@
 
         setTimeout(()=>{
           this._getDiscList();
-        },1000)
+        },20)
 
     },
     methods:{
