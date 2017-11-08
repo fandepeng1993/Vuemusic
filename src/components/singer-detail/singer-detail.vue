@@ -1,19 +1,27 @@
 <template>
-
-  <transition name="slide">
-      <div class="singer-detail">
-        <p>{{hh}}</p>
-        <p>{{ this.$route.query.name }}</p>
-      </div>
+ <!-- <transition-group name="slide" >-->
+  <transition name="slide" >
+      <music-list
+        v-bind:key="hh"
+        v-bind:songs="songs"
+        v-bind:title="title"
+        v-bind:bg-image="bgImage"
+      >
+      </music-list>
   </transition>
+<!--      <song-list v-bind:key="hh" v-bind:title="title" v-bind:songs="songs">
 
+      </song-list>
+  -->
 </template>
 <script type="text/ecmascript-6">
   import {mapGetters} from 'vuex'
   import {getSingerDetail} from 'api/singer'
   import {ERR_OK} from 'api/config'
-  import {createSong,Song} from 'common/js/song'
-  //import Song from 'common/js/song'
+  import {createSong} from 'common/js/song'
+  import MusicList from 'components/music-list/music-list'
+  //import SongList from 'base/song-list/song-list'
+ //import Song from 'common/js/song'
   export default {
     data(){
       return{
@@ -21,13 +29,28 @@
         songs:[]
       }
     },
+    props:{
+
+    },
+    computed:{
+      title:function () {
+        return this.singer.name
+      },
+      bgImage(){
+        return this.singer.avatar
+      },
+      ...mapGetters([
+        'singer'
+      ])
+    },
     created(){
       this._getDetail()
-      let a=new Song(1,2,3,4,5,6,7,8)
-      console.log(a)
+      //console.log(this.singer)
+     /* let a=new Song(1,2,3,4,5,6,7,8)
+      console.log(a)*/
     },
     mounted(){
-     console.log(this.$route.query)
+     //console.log(this.$route.query)
     },
     updated(){
 
@@ -37,10 +60,12 @@
     },
     methods:{
       _getDetail(){
+
         if(!this.singer.id){
           this.$router.push('/singer')
           return
         }
+
         getSingerDetail(this.singer.id).then((res)=> {
           //PS:注意要使用ES6的箭头语法函数,否则this的指向存在问题
           if(res.code===ERR_OK){
@@ -53,12 +78,14 @@
       },
 
       _normalizeSongs(list){
+        //console.log(list)
         let ret=[]
 
        list.forEach(function (item) {
-          let musicData=item.musicData
-          console.log(musicData)
-          if(musicData.songid&&musicData.albummid){
+         // console.log(item)
+          let {musicData}=item
+          //console.log(musicData)
+          if(musicData.songid && musicData.albummid){
             ret.push(createSong(musicData))
           }
         })
@@ -66,33 +93,17 @@
       },
 
     },
-    props:{
-
-    },
-    computed:{
-      ...mapGetters([
-        'singer'
-      ])
-    },
     watch:{
 
     },
     components:{
-
+      MusicList
     }
 
   }
 </script>
 <style type="stylus" lang="stylus" rel="stylesheet/stylus">
   @import "~common/stylus/variable"
-  .singer-detail
-    position fixed
-    z-index 100
-    top 0px
-    left 0px
-    right 0px
-    bottom 0px
-    background $color-background
   .slide-enter-active, .slide-leave-active
     transition :all 0.3s
   .slide-enter, .slide-leave-to

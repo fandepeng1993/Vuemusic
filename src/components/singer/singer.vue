@@ -91,12 +91,10 @@
          })
          //console.log(hot.concat(ret));
          return hot.concat(ret);
-
        },
-
        selectSinger:function (singer) {
          //跳转路由
-         this.$router.push({
+        this.$router.push({
            path:'/singer/'+singer.id,
            query: {name:'fdp',age:24}
          })

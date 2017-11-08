@@ -98,6 +98,7 @@
         this.touch.y1=firstTouch.pageY
         this.touch.anchorIndex=anchorIndex
         this._scrollTo(anchorIndex)
+
       },
 
       onShortcutTouchMove(e){
@@ -107,7 +108,7 @@
         let delta=(this.touch.y2 -this.touch.y1)/ANCHOR_HEIGHT | 0
         let anchorIndex=Number(this.touch.anchorIndex) + delta
         this._scrollTo(anchorIndex)
-        //console.log(this)
+          // console.log(123)
 
       },
       scrollas(pos){
@@ -148,6 +149,7 @@
         //通知点击我的元素是什么
         //派发事件，执行该事件
         this.$emit('select',item)
+
       }
 
     },
