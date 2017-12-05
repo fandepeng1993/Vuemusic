@@ -94,6 +94,7 @@
         })
       },
       ...mapActions([
+        //修改state，统一封装后的修改
         'selectPlay'
       ])
 
