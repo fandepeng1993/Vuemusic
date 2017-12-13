@@ -22,25 +22,31 @@
         <div class="middle">
           <div class="middle-l">
             <div class="cd-wrapper" ref="cdWrapper">
-              <div class="cd">
+              <div class="cd" :class="cdCls">
                 <img class="image" :src="currentSong.image">
               </div>
             </div>
           </div>
         </div>
         <div class="bottom">
+          <div class="progress-wrapper">
+            <span class="time time-l">{{format(currentTime)}}</span>
+            <div class="progress-bar-wrapper">
+            </div>
+            <span class="time time-r">{{format(currentSong())}}</span>
+          </div>
           <div class="operators">
             <div class="icon i-left">
               <i class="icon-sequence"></i>
             </div>
-            <div class="icon i-left">
-              <i class="icon-prev"></i>
+            <div class="icon i-left" :class="disableCls">
+              <i @click="prev" class="icon-prev"></i>
             </div>
-            <div class="icon i-center">
-              <i class="icon-play"></i>
+            <div class="icon i-center" :class="disableCls">
+              <i @click="togglePlaying" :class="playIcon"></i>
             </div>
-            <div class="icon i-right">
-              <i class="icon-next"></i>
+            <div class="icon i-right" :class="disableCls">
+              <i @click="next" class="icon-next"></i>
             </div>
             <div class="icon i-right">
               <i class="icon icon-not-favorite"></i>
@@ -54,19 +60,22 @@
     <transition name="mini">
       <div class="mini-player" v-show="!fullScreen" @click="extend">
       <div class="icon">
-        <img width="40" height="40" :src="currentSong.image">
+        <img :class="cdCls" width="40" height="40" :src="currentSong.image">
       </div>
       <div class="text">
         <h2 class="name" v-text="currentSong.name"></h2>
         <p class="desc" v-text="currentSong.singer"></p>
       </div>
-      <div class="control"></div>
+      <div class="control">
+        <i v-on:click.stop="togglePlaying" v-bind:class="miniIcon"></i>
+      </div>
       <div class="control">
         <i class="icon-playlist"></i>
       </div>
 
     </div>
     </transition>
+    <audio ref="audio" @timeupdate="updateTime" @canplay="ready" v-bind:src="currentSong.url"></audio>
   </div>
 </template>
 
@@ -76,11 +85,31 @@
   import {prefixStyle} from '../../common/js/dom'
   const transform=prefixStyle('transform')
  export default {
+    data(){
+      return{
+        songReady:false,
+        currentTime:0
+      }
+    },
     computed:{
+      playIcon(){
+        return this.playing?'icon-pause':'icon-play'
+      },
+      miniIcon(){
+        return this.playing?'icon-pause-mini':'icon-play-mini'
+      },
+      cdCls(){
+        return this.playing?'play':'play pause'
+      },
+      disableCls(){
+        return this.songReady?'':'disable'
+      },
       ...mapGetters([
         'fullScreen',
         'playlist',
-        'currentSong'
+        'currentSong',
+        'playing',
+        'currentIndex'
       ])
     },
    methods:{
@@ -132,6 +161,100 @@
        this.$refs.cdWrapper.style[transform]=''
 
      },
+     next(){
+       if(!this.songReady){
+         return
+       }
+       let index=this.currentIndex+1;
+       if(index===this.playlist.length){
+         index=0
+       }
+       this.setCurrentIndex(index)
+       if(!this.playing){
+         this.togglePlaying()
+       }
+       this.songReady=false
+
+     },
+     prev(){
+       if(!this.songReady){
+         return
+       }
+       let index=this.currentIndex-1;
+       if(index===-1){
+         index=this.playlist.length-1;
+       }
+       this.setCurrentIndex(index)
+       if(!this.playing){
+         this.togglePlaying()
+       }
+       this.songReady=false
+     },
+     ready(){
+       this.songReady=true
+
+     },
+     error(){
+       //歌曲加载失败出发该函数，保证正常使用
+       this.songReady=true
+     },
+     togglePlaying(){
+       this.setPlayingState(!this.playing)
+     },
+     updateTime(e){
+       /*console.log(e.target.currentTime)*/
+       this.currentTime=e.target.currentTime;
+      /* console.log(this.currentTime);*/
+     },
+     format(interval){
+       /*js运算符单竖杠“|作用”
+       *
+       *
+       * number|0的情况：
+       *1. Math.ceil()用作向上取整。
+        2. Math.floor()用作向下取整。
+        3. Math.round() 我们数学中常用到的四舍五入取整。
+
+        console.log(0.6|0)//0
+        console.log(1.1|0)//1
+        console.log(3.65555|0)//3
+        console.log(5.99999|0)//5
+        console.log(-7.777|0)//-7
+       *
+       *在正数的时候相当于Math.floor(),负数的时候相当于Math.ceil()
+       *ps:
+       * 所有的加，是逻辑加法，又称逻辑加
+       *看了上面的例子，大体知道单竖杠可以进行取整运算，就是只保留正数部分，小数部分通过拿掉，       但是“|0”，又是如何进行运算的呢，为什么能“|0”能达到取整的目的呢？
+       *console.log(3|4); //7
+        console.log(4|4);//4
+        console.log(8|3);//11
+        console.log(5.3|4.1);//5
+        console.log(9|3455);//3455
+       *
+       *console.log(3|4); //7
+        console.log(4|4);//4
+        console.log(8|3);//11
+        console.log(5.3|4.1);//5
+        console.log(9|3455);//3455
+       *单竖杠“|”就是取证转换为2进制之后相加得到的结果。
+       *
+       *3|4
+        转换为二进制之后011|100  相加得到111=7
+
+        4|4
+        转换为二进制之后100 |100  相加得到100=4
+
+        8|3
+        转换为二进制之后1000 |011  相加得到1011=11
+       *
+       *
+       * */
+
+       interval=interval | 0;
+       const minute=interval/60 | 0;
+       const second=interval%60;
+       return `${minute}:${second}`
+     },
      _getPosAndScale(){
        const trageWidth=40
        const paddingLeft=40
@@ -144,9 +267,26 @@
         return{x,y,scale}
      },
      ...mapMutations({
-       //修改state，单个修改
-       setFullScreen:'SET_FULL_SCREEN'
+       //修改state，单个修togglePlaying改
+       setFullScreen:'SET_FULL_SCREEN',
+       setPlayingState:'SET_PLAYING_SATE',
+       setCurrentIndex:'SET_CURRENT_INDEX'
      })
+   },
+   watch:{
+      currentSong(){
+        this.$nextTick(()=>{
+          this.$refs.audio.play()
+        })
+      },
+     playing(newPlaying,oldPlaying){
+        const audio=this.$refs.audio
+       this.$nextTick(()=>{
+         newPlaying?audio.play():audio.pause()
+       })
+
+
+     }
    }
  }
 
