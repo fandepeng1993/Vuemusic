@@ -32,12 +32,13 @@
           <div class="progress-wrapper">
             <span class="time time-l">{{format(currentTime)}}</span>
             <div class="progress-bar-wrapper">
+              <progress-bar @percentChage="onProgressBarChange" :percent="percent" ></progress-bar>
             </div>
-            <span class="time time-r">{{format(currentSong())}}</span>
+            <span class="time time-r">{{format(currentSong.duration)}}</span>
           </div>
           <div class="operators">
-            <div class="icon i-left">
-              <i class="icon-sequence"></i>
+            <div class="icon i-left" @click="changeMode">
+              <i :class="iconMode"></i>
             </div>
             <div class="icon i-left" :class="disableCls">
               <i @click="prev" class="icon-prev"></i>
@@ -59,36 +60,42 @@
     <!--收起播放器-->
     <transition name="mini">
       <div class="mini-player" v-show="!fullScreen" @click="extend">
-      <div class="icon">
-        <img :class="cdCls" width="40" height="40" :src="currentSong.image">
+        <div class="icon">
+          <img :class="cdCls" width="40" height="40" :src="currentSong.image">
+        </div>
+        <div class="text">
+          <h2 class="name" v-text="currentSong.name"></h2>
+          <p class="desc" v-text="currentSong.singer"></p>
+        </div>
+        <div class="control">
+          <progress-circle :radius="radius" :percent="percent">
+            <i v-on:click.stop="togglePlaying" class="icon-mini" v-bind:class="miniIcon"></i>
+          </progress-circle>
+        </div>
+        <div class="control">
+          <i class="icon-playlist"></i>
+        </div>
       </div>
-      <div class="text">
-        <h2 class="name" v-text="currentSong.name"></h2>
-        <p class="desc" v-text="currentSong.singer"></p>
-      </div>
-      <div class="control">
-        <i v-on:click.stop="togglePlaying" v-bind:class="miniIcon"></i>
-      </div>
-      <div class="control">
-        <i class="icon-playlist"></i>
-      </div>
-
-    </div>
     </transition>
-    <audio ref="audio" @timeupdate="updateTime" @canplay="ready" v-bind:src="currentSong.url"></audio>
+    <audio ref="audio" @timeupdate="updateTime" @canplay="ready" @ended="end" v-bind:src="currentSong.url"></audio>
   </div>
 </template>
 
 <script type="text/ecmascript-6">
   import {mapGetters,mapMutations} from 'vuex'
   import animations from 'create-keyframe-animation'
-  import {prefixStyle} from '../../common/js/dom'
+  import {prefixStyle} from 'common/js/dom'
+  import ProgressBar from 'base/progress-bar/progress-bar'
+  import ProgressCircle from 'base/progress-circle/progress-circle'
+  import {playMode} from 'common/js/config'
+  import {shuffle} from 'common/js/util'
   const transform=prefixStyle('transform')
  export default {
     data(){
       return{
         songReady:false,
-        currentTime:0
+        currentTime:0,
+        radius:32
       }
     },
     computed:{
@@ -104,12 +111,20 @@
       disableCls(){
         return this.songReady?'':'disable'
       },
+      percent(){
+        return this.currentTime/this.currentSong.duration
+      },
+      iconMode(){
+        return this.mode===playMode.sequence?'icon-sequence':this.mode===playMode.loop?'icon-loop':'icon-random'
+      },
       ...mapGetters([
         'fullScreen',
         'playlist',
         'currentSong',
         'playing',
-        'currentIndex'
+        'currentIndex',
+        'mode',
+        'sequenceList'
       ])
     },
    methods:{
@@ -120,7 +135,7 @@
        this.setFullScreen(true)
      },
      enter(elm,done){
-//        vue2.0动画钩子函数
+       //vue2.0动画钩子函数
        const {x,y,scale}=this._getPosAndScale();
        let animation={
          0:{
@@ -132,7 +147,6 @@
          100:{
            transform:`translate3d(0,0,0) scale(1)`
          }
-
        };
        animations.registerAnimation({
          name:'move',
@@ -159,7 +173,18 @@
      afterLeave(){
        this.$refs.cdWrapper.style.transition=''
        this.$refs.cdWrapper.style[transform]=''
+     },
+     end(){
+       if(this.mode===playMode.loop){
+         this.loop()
+       }else {
+         this.next()
+       }
 
+     },
+     loop(){
+       this.$refs.audio.currentTime=0
+       this.$refs.audio.play()
      },
      next(){
        if(!this.songReady){
@@ -174,7 +199,6 @@
          this.togglePlaying()
        }
        this.songReady=false
-
      },
      prev(){
        if(!this.songReady){
@@ -206,54 +230,88 @@
        this.currentTime=e.target.currentTime;
       /* console.log(this.currentTime);*/
      },
+     onProgressBarChange(percent){
+       this.$refs.audio.currentTime=this.currentSong.duration*percent
+       if(!this.playing){
+         /*console.log(this.playing)*/
+         this.togglePlaying()
+       }
+     },
+     changeMode(){
+       const mode=(this.mode+1)%3;
+      /* console.log(this.mode)*/
+      /*console.log(this.sequenceList)*/
+       this.setPlayMode(mode);
+       let list=null
+       if(mode ===playMode.random){
+            list=shuffle(this.sequenceList)
+           /* console.log(this.sequenceList)*/
+       }else {
+         list=this.sequenceList
+       }
+       this.resetCurrentIndex(list)
+       this.setPlaylist(list)
+     },
+     resetCurrentIndex(list){
+       let index=list.findIndex((item)=>{
+       //通过索引来查询到当前的list对应的当前播放歌曲的index（混合后）
+         return item.id===this.currentSong.id
+       })
+       this.setCurrentIndex(index)
+       /*console.log(this.currentIndex)*/
+
+     },
      format(interval){
        /*js运算符单竖杠“|作用”
        *
-       *
        * number|0的情况：
        *1. Math.ceil()用作向上取整。
-        2. Math.floor()用作向下取整。
-        3. Math.round() 我们数学中常用到的四舍五入取整。
-
-        console.log(0.6|0)//0
-        console.log(1.1|0)//1
-        console.log(3.65555|0)//3
-        console.log(5.99999|0)//5
-        console.log(-7.777|0)//-7
+       *2. Math.floor()用作向下取整。
+       *3. Math.round() 我们数学中常用到的四舍五入取整。
+       *
+       *console.log(0.6|0)//0
+       *console.log(1.1|0)//1
+       *console.log(3.65555|0)//3
+       *console.log(5.99999|0)//5
+       *console.log(-7.777|0)//-7
        *
        *在正数的时候相当于Math.floor(),负数的时候相当于Math.ceil()
        *ps:
-       * 所有的加，是逻辑加法，又称逻辑加
-       *看了上面的例子，大体知道单竖杠可以进行取整运算，就是只保留正数部分，小数部分通过拿掉，       但是“|0”，又是如何进行运算的呢，为什么能“|0”能达到取整的目的呢？
+       *所有的加，是逻辑加法，又称逻辑加
+       *看了上面的例子，大体知道单竖杠可以进行取整运算，就是只保留正数部分，小数部分通过拿掉，但是“|0”，又是如何进行运算的呢，为什么能       *“|0”能达到取整的目的呢？
        *console.log(3|4); //7
-        console.log(4|4);//4
-        console.log(8|3);//11
-        console.log(5.3|4.1);//5
-        console.log(9|3455);//3455
+       *console.log(4|4);//4
+       *console.log(8|3);//11
+       *console.log(5.3|4.1);//5
+       *console.log(9|3455);//3455
        *
        *console.log(3|4); //7
-        console.log(4|4);//4
-        console.log(8|3);//11
-        console.log(5.3|4.1);//5
-        console.log(9|3455);//3455
+       *console.log(4|4);//4
+       *console.log(8|3);//11
+       *console.log(5.3|4.1);//5
+       *console.log(9|3455);//3455
        *单竖杠“|”就是取证转换为2进制之后相加得到的结果。
        *
        *3|4
-        转换为二进制之后011|100  相加得到111=7
-
-        4|4
-        转换为二进制之后100 |100  相加得到100=4
-
-        8|3
-        转换为二进制之后1000 |011  相加得到1011=11
-       *
+       *转换为二进制之后011|100  相加得到111=7
+       *4|4
+       *转换为二进制之后100 |100  相加得到100=4
+       *8|3
+       *转换为二进制之后1000 |011  相加得到1011=11
        *
        * */
-
        interval=interval | 0;
        const minute=interval/60 | 0;
-       const second=interval%60;
+       const second=this._pad(interval%60);
        return `${minute}:${second}`
+     },
+     _pad(num,n=2){
+       let len=num.toString().length;
+       while (len<n){
+         num='0'+num
+         len++
+       }
+       return num
      },
      _getPosAndScale(){
        const trageWidth=40
@@ -270,23 +328,30 @@
        //修改state，单个修togglePlaying改
        setFullScreen:'SET_FULL_SCREEN',
        setPlayingState:'SET_PLAYING_SATE',
-       setCurrentIndex:'SET_CURRENT_INDEX'
+       setCurrentIndex:'SET_CURRENT_INDEX',
+       setPlayMode:'SET_PLAY_MODE',
+       setPlaylist:'SET_PLAYLIST'
      })
    },
    watch:{
-      currentSong(){
+      currentSong(newSong,oldSong){
+        if(newSong.id===oldSong.id){
+          return
+        }
         this.$nextTick(()=>{
           this.$refs.audio.play()
         })
       },
      playing(newPlaying,oldPlaying){
-        const audio=this.$refs.audio
+       const audio=this.$refs.audio
        this.$nextTick(()=>{
          newPlaying?audio.play():audio.pause()
        })
-
-
      }
+   },
+   components:{
+        ProgressBar,
+        ProgressCircle
    }
  }
 
