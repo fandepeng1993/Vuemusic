@@ -20,8 +20,8 @@ export function getRecommend(){
 
 export function getDiscList() {
   const url = '/api/getDiscList'
-
   const data = Object.assign({}, commonParams, {
+    picmid:1,
     platform: 'yqq',
     hostUin: 0,
     sin: 0,
@@ -32,12 +32,36 @@ export function getDiscList() {
     rnd: Math.random(),
     format: 'json'
   })
-
+//这个是ajax请求本地服务端数据
   return axios.get(url, {
     params: data
   }).then((res) => {
     return Promise.resolve(res.data)
   })
+}
+
+
+export function getSongList(dissid) {
+  const url='/api/recommendList'
+  const data=Object.assign({},commonParams,{
+    disstid:dissid,
+    type:1,
+    json:1,
+    utf8:1,
+    onlysong:0,
+    platform:'yqq',
+    loginUin:0,
+    hostUin:0,
+    needNewCode:0,
+    format:'json',
+    g_tk:5381
+  })
+  return axios.get(url,{
+    params:data
+  }).then((res)=>{
+    return Promise.resolve(res.data)
+  })
+
 }
 
 

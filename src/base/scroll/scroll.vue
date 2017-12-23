@@ -23,6 +23,14 @@
       listenSCroll:{
         type:Boolean,
         default:false
+      },
+      pullup:{
+        type:Boolean,
+        default:false
+      },
+      beforeScroll:{
+        type:Boolean,
+        default:false
       }
     },
     mounted(){
@@ -44,6 +52,25 @@
           me.scroll.on('scroll',(pos)=>{
             me.$emit('scrollss',pos)
             //console.log(pos)
+          })
+        }
+        if(this.pullup){
+          this.scroll.on('scrollEnd',()=>{
+            /*this.scroll.maxScrollY
+            scrollEnd：是滚动松开手指结束的时候
+            * 表示的是滚动元素总体高度-外边承包框显示区域的高度
+            * +50代表loading 缓冲区
+            * */
+            /*console.log(this.scroll.y,this.scroll.maxScrollY);*/
+            if(this.scroll.y<=(this.scroll.maxScrollY+50)){
+              //表示滚动到底部
+              this.$emit('scrollToEnd')
+            }
+          })
+        }
+        if(this.beforeScroll){
+          this.scroll.on('beforeScrollStart',()=>{
+            this.$emit('beforeScroll')
           })
         }
       },

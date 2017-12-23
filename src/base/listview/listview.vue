@@ -111,6 +111,9 @@
           // console.log(123)
 
       },
+      refresh(){
+        this.$refs.listview.refresh()
+      },
       scrollas(pos){
        this.scrollY=pos.y
         //console.log(this.scrollY)

@@ -17,7 +17,7 @@
       <div class="bg-layer" ref="layer"></div>
       <scroll @scrollss="scrollbs" :probeType="probeType" :listenSCroll="listenSCroll" :datas="songs" class="list" ref="list">
         <div class="song-list-wrapper">
-          <song-list @select="selectItem" :songs="songs"></song-list>
+          <song-list :rank="rank" @select="selectItem" :songs="songs"></song-list>
         </div>
         <div class="loading-container" v-show="!songs.length">
           <loading></loading>
@@ -34,12 +34,16 @@
   import {prefixStyle} from 'common/js/dom'
   import Loading from 'base/loading/loading'
   import {mapActions} from 'vuex'
+  import {playlistMixin} from 'common/js/mixin'
 
   const RESERVED_HEIGHT=40
   const transform= prefixStyle('transform')
   const backdrop=prefixStyle('backdrop-filter')
 
   export default {
+    //组件的优先级方法高于mixin
+    //一单使用必须要用MIXIN方法
+    mixins:[playlistMixin],
     data() {
       return{
         scrollY:0
@@ -57,6 +61,10 @@
       title:{
         type:String,
         default:''
+      },
+      rank:{
+        type:Boolean,
+        default:false
       }
     },
     mounted(){
@@ -79,6 +87,11 @@
       Loading
     },
     methods:{
+      handlePlaylist(playlist){
+        const bottom=playlist.length>0?'60px':''
+        this.$refs.list.$el.style.bottom=bottom
+        this.$refs.list.refresh()
+      },
       scrollbs(pos){
         //console.log(123)
         this.scrollY=pos.y
